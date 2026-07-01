@@ -33,27 +33,25 @@ export const isMarketClosed = () => {
   return false;
 };
 
-// 计算持仓盈亏
+// 计算持仓今日盈亏
 export const calculatePositionProfit = (stock: StockData, positions: PositionData[]) => {
   const position = positions.find(p => p.code === stock.code);
   if (!position) return null;
   
-  const currentValue = stock.price * position.shares;
-  const costValue = position.costPrice * position.shares;
-  const profit = currentValue - costValue;
+  // 今日盈亏 = 今日涨跌 * 持仓数量
+  const profit = stock.change * position.shares;
   
   return profit;
 };
 
-// 计算总盈亏
+// 计算总今日盈亏
 export const calculateTotalProfit = (stocks: StockData[], positions: PositionData[]) => {
   return stocks.reduce((total, stock) => {
     const position = positions.find(p => p.code === stock.code);
     if (!position) return total;
     
-    const currentValue = stock.price * position.shares;
-    const costValue = position.costPrice * position.shares;
-    const profit = currentValue - costValue;
+    // 今日盈亏 = 今日涨跌 * 持仓数量
+    const profit = stock.change * position.shares;
     
     return total + profit;
   }, 0);

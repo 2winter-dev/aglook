@@ -15,7 +15,7 @@ Notifications.setNotificationCategoryAsync('stock-notification-category', [
   },
   {
     identifier: 'hide-profit',
-    buttonTitle: '隐藏持仓金额',
+    buttonTitle: '隐藏金额',
     options: {
       opensAppToForeground: false,
     },
@@ -83,11 +83,12 @@ export const updateStockNotification = async (stocks: StockData[], showProfit: b
     let notificationContent = '';
     displayStocks.forEach((stock, index) => {
       const position = positions.find(p => p.code === stock.code);
-      const profit = position ? (stock.price - position.costPrice) * position.shares : null;
+      // 今日盈亏 = 今日涨跌 * 持仓数量
+      const profit = position ? stock.change * position.shares : null;
       
       notificationContent += `${stock.name} ${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)} (${stock.change >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%)`;
       if (showProfit && profit !== null) {
-        notificationContent += ` 盈亏: ${profit >= 0 ? '+' : ''}${profit.toFixed(2)}`;
+        notificationContent += ` 今日: ${profit >= 0 ? '+' : ''}${profit.toFixed(2)}`;
       }
       if (index < displayStocks.length - 1) {
         notificationContent += '\n';

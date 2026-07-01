@@ -13,6 +13,7 @@ import SettingsModal from '../components/modals/SettingsModal';
 import PositionModal from '../components/modals/PositionModal';
 import StockDetailModal from '../components/modals/StockDetailModal';
 import StockItem from '../components/StockItem';
+import InspirationalQuotes from '../components/InspirationalQuotes';
 import { getChangeColor } from '../utils/helpers';
 import { isMarketClosed, calculatePositionProfit, calculateTotalProfit, PositionData } from '../utils/marketUtils';
 import { IndexStyles as styles } from '@/constants/index.style';
@@ -41,6 +42,10 @@ export default function HomeScreen() {
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const chartRef = useRef<any>(null);
+  // 显示盈亏状态
+  const [showProfit, setShowProfit] = useState(true);
+  // 励志语句刷新状态
+  const [refreshQuote, setRefreshQuote] = useState(false);
   // 持仓相关状态
   const [positionModalVisible, setPositionModalVisible] = useState(false);
   const [currentPositionStock, setCurrentPositionStock] = useState<StockData | null>(null);
@@ -84,11 +89,13 @@ export default function HomeScreen() {
         const notificationStocksData = updatedStocks.filter(stock =>
           (notificationStocksList || notificationStocks).includes(stock.code)
         );
-        await updateStockNotification(notificationStocksData);
+        await updateStockNotification(notificationStocksData, showProfit);
       }
       await loadMarketData();
       const now = new Date().toLocaleString();
       setLastRefreshTime(now);
+      // 触发励志语句刷新
+      setRefreshQuote(prev => !prev);
     } catch (error) {
       console.error('刷新股票数据失败:', error);
     } finally {
@@ -224,7 +231,7 @@ export default function HomeScreen() {
       const notificationStocksData = stocks.filter(stock =>
         notificationStocks.includes(stock.code)
       );
-      await updateStockNotification(notificationStocksData);
+      await updateStockNotification(notificationStocksData, showProfit);
     } catch (error) {
       console.error('保存持仓数据失败:', error);
     }
@@ -350,8 +357,8 @@ export default function HomeScreen() {
         setNotificationStocks(updatedNotificationStocks);
         await saveNotificationStocks(updatedNotificationStocks);
         await updateStockNotification(updatedStocks.filter(s =>
-          updatedNotificationStocks.includes(s.code)
-        ));
+          notificationStocks.includes(s.code)
+        ), showProfit);
       }
     } catch (error) {
       console.error('添加股票失败:', error);
@@ -376,8 +383,8 @@ export default function HomeScreen() {
               setNotificationStocks(updatedNotificationStocks);
               await saveNotificationStocks(updatedNotificationStocks);
               await updateStockNotification(updatedStocks.filter(s =>
-                updatedNotificationStocks.includes(s.code)
-              ));
+                notificationStocks.includes(s.code)
+              ), showProfit);
             } catch (error) {
               console.error('移除股票失败:', error);
             }
@@ -406,7 +413,7 @@ export default function HomeScreen() {
       const notificationStocksData = stocks.filter(stock =>
         updatedNotificationStocks.includes(stock.code)
       );
-      await updateStockNotification(notificationStocksData);
+      await updateStockNotification(notificationStocksData, showProfit);
     } catch (error) {
       console.error('切换通知栏显示失败:', error);
     }
@@ -474,9 +481,22 @@ export default function HomeScreen() {
 
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
-            <Text style={{...styles.sectionTitle,color: getChangeColor(calculateTotalProfit(stocks, positions)) }}>今日总盈亏 ¥{calculateTotalProfit(stocks, positions).toFixed(2)}</Text>
+            {showProfit ? 
+              <Text style={{...styles.sectionTitle,color: getChangeColor(calculateTotalProfit(stocks, positions)) }}>今日总盈亏 ¥{calculateTotalProfit(stocks, positions).toFixed(2)}</Text>
+              :<Text style={{...styles.sectionTitle,color: THEME_TEXT_SECONDARY }}>我的股票</Text>
+            }
           </View>
           <View style={styles.sortContainer}>
+            <TouchableOpacity 
+              style={styles.sortButton}
+              onPress={() => setShowProfit(!showProfit)}
+            >
+              <Ionicons 
+                name={showProfit ? 'eye' : 'eye-off'} 
+                size={16} 
+                color={THEME_TEXT_SECONDARY} 
+              />
+            </TouchableOpacity>
             <TouchableOpacity 
               style={styles.sortButton}
               onPress={() => {
@@ -523,32 +543,36 @@ export default function HomeScreen() {
             <Text style={styles.emptySubtext}>点击右下角按钮添加股票</Text>
           </View>
         ) : (
-          <View style={styles.stockList}>
-            {[...stocks].sort((a, b) => {
-              if (sortBy === 'changePercent') {
-                return sortOrder === 'desc' 
-                  ? b.changePercent - a.changePercent 
-                  : a.changePercent - b.changePercent;
-              } else if (sortBy === 'price') {
-                return sortOrder === 'desc' 
-                  ? b.price - a.price 
-                  : a.price - b.price;
-              }
-              return 0;
-            }).map(stock => (
-              <View key={stock.code}>
-                <StockItem
+          <>
+            <View style={styles.stockList}>
+              {[...stocks].sort((a, b) => {
+                if (sortBy === 'changePercent') {
+                  return sortOrder === 'desc' 
+                    ? b.changePercent - a.changePercent 
+                    : a.changePercent - b.changePercent;
+                } else if (sortBy === 'price') {
+                  return sortOrder === 'desc' 
+                    ? b.price - a.price 
+                    : a.price - b.price;
+                }
+                return 0;
+              }).map(stock => (
+                <View key={stock.code}>
+                  <StockItem
                   item={stock}
                   positions={positions}
                   notificationStocks={notificationStocks}
+                  showProfit={showProfit}
                   onOpenDetail={openStockDetail}
                   onOpenPositionModal={openPositionModal}
                   onToggleNotification={toggleNotification}
                   onRemoveStock={handleRemoveStock}
                 />
-              </View>
-            ))}
-          </View>
+                </View>
+              ))}
+            </View>
+            <InspirationalQuotes refresh={refreshQuote} />
+          </>
         )}
       </ScrollView>
 

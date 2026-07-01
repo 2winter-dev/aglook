@@ -88,7 +88,7 @@ export const IndexStyles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: THEME_TEXT,
     fontWeight: 'bold',
   },
